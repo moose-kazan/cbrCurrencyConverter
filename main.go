@@ -45,9 +45,15 @@ func main() {
 	a = app.NewWithID("cbrRates")
 	a.Settings().SetTheme(apptheme.New())
 	w = a.NewWindow("CBR Currency Converter")
-	w.Resize(fyne.NewSize(500, 320))
+	w.Resize(fyne.NewSize(480, 320))
 	content := container.NewVBox()
-	content.Add(widget.NewLabel("Currency converter based on cbr.ru API"))
+	//content.Add(widget.NewLabel("Currency converter based on cbr.ru API"))
+	appHeader := widget.NewLabel(
+		"Currency converter based on data from\nCentral Bank of Russia",
+	)
+	appHeader.Alignment = fyne.TextAlignCenter
+
+	content.Add(appHeader)
 
 	selectSrc = widget.NewSelect([]string{}, runConvert)
 	selectDst = widget.NewSelect([]string{}, runConvert)
