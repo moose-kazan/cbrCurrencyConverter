@@ -1,9 +1,11 @@
 package currency
 
 import (
+	"bytes"
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -16,10 +18,14 @@ type CurrencyList struct {
 	Date    string         `xml:"Date,attr"`
 	Name    string         `xml:"name,attr"`
 	Rates   []CurrencyInfo `xml:"Valute"`
+	cache   *CurrencyCache
 }
 
 type CurrencyListInterface interface {
 	Convert(src string, dst string) (float64, error)
+	Fetch(datestr string) error
+	SetCache(cache CurrencyCache)
+	parse(data []byte) error
 }
 
 type CurrencyInfo struct {
@@ -39,7 +45,12 @@ type CurrencyInfoInterface interface {
 	GetName() string
 }
 
-func (cl CurrencyList) Convert(src string, dst string) (float64, error) {
+type CurrencyCache struct {
+	CacheGet func(date string) *string
+	CacheSet func(date string, data string)
+}
+
+func (cl *CurrencyList) Convert(src string, dst string) (float64, error) {
 	if src == dst {
 		return 1, nil
 	}
@@ -95,11 +106,23 @@ func (ci CurrencyInfo) GetName() string {
 	return ci.Name
 }
 
-func New(datestr string) (*CurrencyList, error) {
+func New() *CurrencyList {
+	var rv CurrencyList
+	return &rv
+}
+
+func (cl *CurrencyList) Fetch(datestr string) error {
+	if cl.cache != nil {
+		var cacheData *string = cl.cache.CacheGet(datestr)
+		if cacheData != nil {
+			return cl.parse([]byte(*cacheData))
+		}
+	}
+
 	var url string = fmt.Sprintf("https://www.cbr.ru/scripts/XML_daily_eng.asp?date_req=%s", datestr)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	req.Header.Add("User-Agent", "Mozilla/5.0")
@@ -107,20 +130,37 @@ func New(datestr string) (*CurrencyList, error) {
 	resp, err := client.Do(req)
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New(fmt.Sprintf("Bad http code: %d", resp.StatusCode))
+		return errors.New(fmt.Sprintf("Bad http code: %d", resp.StatusCode))
 	}
 
-	d := xml.NewDecoder(resp.Body)
+	var data []byte
+	data, err = io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	if cl.cache != nil {
+		cl.cache.CacheSet(datestr, string(data))
+	}
+
+	return cl.parse(data)
+}
+
+func (cl *CurrencyList) SetCache(cache *CurrencyCache) {
+	cl.cache = cache
+}
+
+func (cl *CurrencyList) parse(data []byte) error {
+	d := xml.NewDecoder(bytes.NewReader(data))
 	d.CharsetReader = charset.NewReaderLabel
 
-	var rv CurrencyList
-	err = d.Decode(&rv)
+	err := d.Decode(cl)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	var rub CurrencyInfo = CurrencyInfo{
@@ -130,7 +170,7 @@ func New(datestr string) (*CurrencyList, error) {
 		Name:     "Russian Ruble",
 		Value:    "1",
 	}
-	rv.Rates = append(rv.Rates, rub)
+	cl.Rates = append(cl.Rates, rub)
 
-	return &rv, nil
+	return nil
 }

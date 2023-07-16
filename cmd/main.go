@@ -66,8 +66,9 @@ func main() {
 
 	w.SetContent(content)
 
-	var err error
-	cRates, err = currency.New("")
+	cRates = currency.New()
+	cRates.SetCache(GetCurrencyCache(a.Preferences()))
+	err := cRates.Fetch("")
 	if err != nil {
 		fmt.Println(err)
 		a.Quit()
@@ -90,50 +91,3 @@ func main() {
 
 	w.ShowAndRun()
 }
-
-/*
-func main() {
-	data, err := currency.Get("30/05/2023")
-
-	if err != nil {
-		fmt.Println(err)
-		return
-	} else {
-	}
-
-	//fmt.Println(data)
-
-	fmt.Printf("Exchange rates on %s:\n", data.Date)
-	for _, v := range data.Rates {
-		fmt.Printf(
-			"% 6d %s = %f RUB\n",
-			v.GetNominal(),
-			v.GetISOCode(),
-			v.GetValue(),
-		)
-	}
-
-	var currencies []string = []string{
-		"USD",
-		"EUR",
-		"AZN",
-		"BYN",
-		"KZT",
-		"RUB",
-		"GBP",
-		"VND",
-	}
-
-	for _, src := range currencies {
-		for _, dst := range currencies {
-			r, e := data.Convert(src, dst)
-			if e != nil {
-				fmt.Println(e)
-			} else {
-				fmt.Printf("%s to %s = %f\n", src, dst, r)
-			}
-		}
-	}
-
-}
-*/
