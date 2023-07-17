@@ -14,11 +14,12 @@ import (
 )
 
 type CurrencyList struct {
-	XMLName xml.Name       `xml:"ValCurs"`
-	Date    string         `xml:"Date,attr"`
-	Name    string         `xml:"name,attr"`
-	Rates   []CurrencyInfo `xml:"Valute"`
-	cache   *CurrencyCache
+	XMLName     xml.Name       `xml:"ValCurs"`
+	Date        string         `xml:"Date,attr"`
+	Name        string         `xml:"name,attr"`
+	Rates       []CurrencyInfo `xml:"Valute"`
+	cache       *CurrencyCache
+	urlTemplate string
 }
 
 type CurrencyListInterface interface {
@@ -108,6 +109,7 @@ func (ci CurrencyInfo) GetName() string {
 
 func New() *CurrencyList {
 	var rv CurrencyList
+	rv.urlTemplate = "https://www.cbr.ru/scripts/XML_daily_eng.asp?date_req=%s"
 	return &rv
 }
 
@@ -119,7 +121,7 @@ func (cl *CurrencyList) Fetch(datestr string) error {
 		}
 	}
 
-	var url string = fmt.Sprintf("https://www.cbr.ru/scripts/XML_daily_eng.asp?date_req=%s", datestr)
+	var url string = fmt.Sprintf(cl.urlTemplate, datestr)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return err

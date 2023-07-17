@@ -6,3 +6,6 @@ build:
 
 clean:
 	rm -rf build
+
+test:
+	go test -v -covermode=count './...'
