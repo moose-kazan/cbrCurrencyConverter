@@ -79,13 +79,6 @@ func main() {
 			currencyTitles,
 			fmt.Sprintf("%s (%s)", v.GetISOCode(), v.GetName()))
 	}
-	for i := 1; i < len(currencyTitles); i++ {
-		if currencyTitles[i] < currencyTitles[i-1] {
-			for j := i; j > 0 && currencyTitles[j] < currencyTitles[j-1]; j-- {
-				currencyTitles[j], currencyTitles[j-1] = currencyTitles[j-1], currencyTitles[j]
-			}
-		}
-	}
 	selectSrc.Options = currencyTitles
 	selectDst.Options = currencyTitles
 
