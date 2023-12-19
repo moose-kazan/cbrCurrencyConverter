@@ -1,86 +1,116 @@
 package main
 
 import (
-	"cbr/internal/apptheme"
-	"cbr/internal/currency"
 	"fmt"
-	"os"
 
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/app"
-	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/widget"
+	"cbr/internal/currency"
+
+	"bitbucket.org/rj/goey"
+	"bitbucket.org/rj/goey/base"
+	"bitbucket.org/rj/goey/loop"
 )
 
 var (
-	a          fyne.App
-	w          fyne.Window
-	cRates     *currency.CurrencyList
-	selectSrc  *widget.Select
-	selectDst  *widget.Select
-	resultItem *widget.Entry
+	mainWindow    *goey.Window
+	convertSrc    *goey.SelectInput = new(goey.SelectInput)
+	convertDst    *goey.SelectInput = new(goey.SelectInput)
+	convertResult string
+	cRates        currency.CurrencyList
 )
 
-func runConvert(_ string) {
-	if selectSrc.SelectedIndex() == -1 {
-		return
+func main() {
+	err := loop.Run(createMainWindow)
+	if err != nil {
+		fmt.Println("Error: ", err)
 	}
-	if selectDst.SelectedIndex() == -1 {
-		return
-	}
-	var src = selectSrc.Selected[0:3]
-	var dst = selectDst.Selected[0:3]
-	rate, _ := cRates.Convert(src, dst)
-	resultItem.SetText(
-		fmt.Sprintf(
-			"1 %s = %f %s\n1 %s = %f %s\n",
-			dst, rate, src,
-			src, 1/rate, dst,
-		),
-	)
 }
 
-func main() {
-	os.Setenv("FYNE_THEME", "light")
-	a = app.NewWithID("cbrRates")
-	a.Settings().SetTheme(apptheme.New())
-	w = a.NewWindow("CBR Currency Converter")
-	w.Resize(fyne.NewSize(480, 320))
-	content := container.NewVBox()
-	//content.Add(widget.NewLabel("Currency converter based on cbr.ru API"))
-	appHeader := widget.NewLabel(
-		"Currency converter based on data from\nCentral Bank of Russia",
-	)
-	appHeader.Alignment = fyne.TextAlignCenter
-
-	content.Add(appHeader)
-
-	selectSrc = widget.NewSelect([]string{}, runConvert)
-	selectDst = widget.NewSelect([]string{}, runConvert)
-	resultItem = widget.NewEntry()
-	resultItem.Disable()
-	resultItem.MultiLine = true
-	content.Add(selectSrc)
-	content.Add(selectDst)
-	content.Add(resultItem)
-
-	w.SetContent(content)
-
-	cRates = currency.New()
-	cRates.SetCache(GetCurrencyCache(a.Preferences()))
-	err := cRates.Fetch("")
-	if err != nil {
-		fmt.Println(err)
-		a.Quit()
+func runConvert() {
+	if convertSrc.Value < 0 {
+		return
 	}
+	if convertDst.Value < 0 {
+		return
+	}
+	valSrc := convertSrc.Items[convertSrc.Value][0:3]
+	valDst := convertDst.Items[convertDst.Value][0:3]
+
+	rate, _ := cRates.Convert(valSrc, valDst)
+
+	convertResult = fmt.Sprintf(
+		"1 %s = %f %s\n1 %s = %f %s\n",
+		valSrc, 1/rate, valDst,
+		valDst, rate, valSrc,
+	)
+
+}
+
+func createMainWindow() error {
+	cRates = *currency.New()
+	err := cRates.Fetch("")
+
+	if err != nil {
+		panic(err)
+	}
+
 	var currencyTitles []string
 	for _, v := range cRates.Rates {
 		currencyTitles = append(
 			currencyTitles,
 			fmt.Sprintf("%s (%s)", v.GetISOCode(), v.GetName()))
 	}
-	selectSrc.Options = currencyTitles
-	selectDst.Options = currencyTitles
 
-	w.ShowAndRun()
+	convertSrc.Items = currencyTitles
+	convertSrc.OnChange = func(c int) {
+		convertSrc.Value = c
+		runConvert()
+		updateMainWindow()
+	}
+
+	convertDst.Items = currencyTitles
+	convertDst.OnChange = func(c int) {
+		convertDst.Value = c
+		runConvert()
+		updateMainWindow()
+	}
+
+	mw, err := goey.NewWindow("CBR Currency Converter", renderMainWindow())
+
+	if err != nil {
+		return err
+	}
+
+	mw.SetScroll(false, true)
+	mainWindow = mw
+
+	return nil
+}
+
+func renderMainWindow() base.Widget {
+	return &goey.VBox{
+		Children: []base.Widget{
+			&goey.P{
+				Text:  "Currency converter based on data from\nCentral Bank of Russia",
+				Align: goey.JustifyCenter,
+			},
+
+			convertSrc,
+			convertDst,
+			&goey.Expand{
+				Child: &goey.TextArea{
+					ReadOnly: true,
+					Value:    convertResult,
+					MinLines: 10,
+				},
+			},
+		},
+	}
+}
+
+func updateMainWindow() {
+	err := mainWindow.SetChild(renderMainWindow())
+
+	if err != nil {
+		fmt.Println(err)
+	}
 }

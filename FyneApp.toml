@@ -1,8 +1,0 @@
-Website = "https://github.com/moose-kazan/cbrCurrencyConverter"
-
-[Details]
-  Icon = "Icon.png"
-  Name = "CBR Currency Converter"
-  ID = "com.ylsoftware.cbrrates"
-  Version = "0.0.1"
-  Build = 1
