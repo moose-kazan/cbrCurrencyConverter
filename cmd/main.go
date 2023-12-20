@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"runtime"
 
 	"cbr/internal/currency"
 
@@ -37,8 +38,14 @@ func runConvert() {
 
 	rate, _ := cRates.Convert(valSrc, valDst)
 
+	resultFormat := "1 %s = %f %s\n1 %s = %f %s\n"
+	if runtime.GOOS == "windows" {
+		resultFormat = "1 %s = %f %s\r\n1 %s = %f %s\r\n"
+	} else if runtime.GOOS == "darwin" {
+		resultFormat = "1 %s = %f %s\r1 %s = %f %s\r"
+	}
 	convertResult = fmt.Sprintf(
-		"1 %s = %f %s\n1 %s = %f %s\n",
+		resultFormat,
 		valSrc, 1/rate, valDst,
 		valDst, rate, valSrc,
 	)
