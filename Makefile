@@ -8,7 +8,7 @@ endif
 
 build:
 ifeq ($(OS),Windows_NT)
-	rsrc -manifest ./cbr.exe.manifest -ico ./Icon.ico -o ./cmd/rsrc.syso
+	go-winres make --out cmd/rsrc.syso --no-suffix --arch $(shell go env GOARCH)
 endif
 	mkdir -p build
 	cd build && \
@@ -25,5 +25,5 @@ depends:
 	go get bitbucket.org/rj/goey@latest
 	go get golang.org/x/net@latest
 ifeq ($(OS),Windows_NT)
-	go install github.com/akavel/rsrc@latest
+	go install github.com/tc-hib/go-winres@latest
 endif
