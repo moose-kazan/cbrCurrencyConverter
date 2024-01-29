@@ -21,11 +21,11 @@
         "dpi-awareness": "system",
         "disable-theming": false,
         "disable-window-filtering": false,
-        "high-resolution-scrolling-aware": false,
-        "ultra-high-resolution-scrolling-aware": false,
+        "high-resolution-scrolling-aware": true,
+        "ultra-high-resolution-scrolling-aware": true,
         "long-path-aware": false,
         "printer-driver-isolation": false,
-        "gdi-scaling": false,
+        "gdi-scaling": true,
         "segment-heap": false,
         "use-common-controls-v6": true
       }
