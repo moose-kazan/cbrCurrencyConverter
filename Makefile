@@ -7,13 +7,16 @@ endif
 
 
 build:
+ifeq ($(OS),Windows_NT)
+	rsrc -manifest ./cbr.exe.manifest -ico ./Icon.ico -o ./cmd/rsrc.syso
+endif
 	mkdir -p build
 	cd build && \
-		rsrc -ico ../Icon.ico && \
-		go build ${BUILD_FLAGS} -o cbr${EXEEXT} ../cmd/*.go
+		go build ${BUILD_FLAGS} -o cbr${EXEEXT} ../cmd/
 
 clean:
 	rm -rf build
+	rm -f cmd/rsrc.syso
 
 test:
 	go test -v -covermode=count './...'
